@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+  <title>Info Viz Project</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+  <script type = "text/javascript" src="colorbrewer.min.js"></script>
+  
+  
+  
+	<style>
+  
+  
+	body {
+		  position: relative; 
+	  }
+	  
+	  rect.bordered {
+			stroke: #E6E6E6;
+			stroke-width:2px;   
+		  }
+
+		  text.mono {
+			font-size: 9pt;
+			font-family: sans-serif;
+			fill: #aaa;
+		  }
+
+		  text.axis-workweek {
+			fill: #000;
+		  }
+
+		  text.axis-worktime {
+			fill: #000;
+		  }
+
+	.toolTip {
+		position: absolute;
+	  display: none;
+	  min-width: 50px;
+	  height: auto;
+	  background: none repeat scroll 0 0 #dddddf;
+	  border: 0px solid #9A757F;
+	  padding: 20px;
+	  text-align: center;
+	}
+
+	.axis cells,
+	.axis line {
+	  fill: none;
+	  stroke: #D4D8DA;
+	  stroke-width: 1px;
+	  shape-rendering: crispEdges;
+	}
+	#xaxis text, #yaxis text {
+		font-family:  "serif";
+		font-size: 25px;
+	  }
+	.x cells {
+		stroke: #000000;
+	  stroke-width: 1px;
+	  shape-rendering: crispEdges;
+	}
+
+	  .axis cells,
+	  .axis line {
+		fill: none;
+		stroke: black;
+		shape-rendering: crispEdges;
+	  }
+
+	  .axis path,
+	.axis line {
+	  fill: none;
+	  stroke: #000;
+	  shape-rendering: crispEdges;
+	}
+
+	  .axis text {
+		  font-family: sans-serif;
+		  font-size: 11px;
+	  }
+
+	  #heatmap {                                                          
+			height: 10px;                                                  
+			position: relative;                                             
+			width: 60px; 
+		  }                                                                 
+		  .tooltip {                                                       
+			position: absolute;
+			text-align: center;
+			width: 60px;
+			height: 12px;
+			padding: 8px;
+			margin-top: -20px;
+			font: 10px sans-serif;
+			background: #ddd;
+			pointer-events: none;                                                   
+		  }                                                                 
+		  .legend {
+			position:absolute;
+			left:800px;
+			top:350px;
+			font-size: 12px;
+			font-family:"sans-serif";
+			font-weight: bold; 
+		  }
+		  
+		  label {
+	  position: absolute;
+	  top: 10px;
+	  right: 10px;
+	}
+
+		  rect {
+			stroke-width: 2;
+		  }
+		  .container2 {
+			padding: 75px;
+		  }
+
+	 </style>
+	 
+</head>
+
+<body data-spy="scroll" data-target=".navbar" data-offset="50">
+
+<div class="heatmap">
+	<h2 align="left-side">Student Enrollments in various Courses across Semesters</h2>
+</div>
+
+<script src="//d3js.org/d3.v3.min.js"></script>
+<script type = "text/javascript" src="colorbrewer.min.js"></script>
+
+<script>
+    var itemSize = 50,
+      cellSize = itemSize - 0.5,
+      margin = {top: 60, right: 5, bottom: 20, left: 100};
+	  <!-- buckets = 9, -->
+	var legendRectSize = 49;
+    
+	var legendSpacing = 5;
+	  
+	var svg = d3.select("svg"),
+		width = 1800- margin.right - margin.left,
+		height = 2000 - margin.top - margin.bottom,
+		g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+		var tooltip = d3.select("body").append("div").attr("class", "toolTip");
+		
+	d3.json("data.json", function(response) {
+   
+   var data1 = response.map(function( item ) {
+        var newItem = {};
+        newItem.course = item.Course_ID;
+        newItem.semester = item.Semester_ID;
+       newItem.enrollments = +item.Enroll;
+        return newItem;
+	})
+	
+	<!-- data1.sort(function(a, b) { return d3.ascending(a.course, b.course)}); -->
+	
+	<!-- data1.sort(function(a, b) { return d3.ascending(a.semester, b.semester)}); -->
+
+	var x_elements = d3.set(data1.map(function( item ) { return item.semester; } )).values(),
+        y_elements = d3.set(data1.map(function( item ) { return item.course; } )).values();
+		z_elements = d3.set(data1.map(function( item ) { return item.enrollments; } )).values()
+		
+	var nested = d3.nest() 
+	    .key(function(d) { return d.Semester_ID; }) 
+		.key(function(d) { return d.Course_ID; }) 
+		.rollup(function(v) { return d3.sum(v, function(d) { return d.Enroll; }); }) 
+		.entries(response);
+		//console.log(JSON.stringify(data)); 
+		
+	<!-- data.forEach(function(d) { -->
+		<!-- d.Semester_ID = d.Semester_ID; -->
+			 <!-- d.Course_ID = d.key; -->
+			 <!-- d.Enroll = d.value; -->
+			<!-- }); -->
+		
+		
+		data = [];
+		nested.forEach(function(d){
+				temp_courses = y_elements;
+				d.values.forEach(function(k){
+					temp={};
+					temp["Semester_ID"] = d.key;
+					temp["Course_ID"] = k.key;
+					temp["Enroll"] = k.values;
+					data.push(temp);
+					
+					if(k.key in temp_courses){
+						index = temp_courses.indexOf(k.key);
+						if(index>-1){
+							temp_courses.splice(index,1);
+						}
+					}
+				});
+				console.log(temp_courses);
+		});
+			
+	var xScale = d3.scale.ordinal()
+        .domain(x_elements)
+       .rangeBands([0, x_elements.length*200]);
+
+	var colors = colorbrewer.YlGn[6];
+	
+    var xAxis = d3.svg.axis()
+        .scale(xScale)
+        .tickFormat(function (d) {
+            return d;
+        })
+        .orient("top");
+
+    var yScale = d3.scale.ordinal()
+        .domain(y_elements)
+        .rangeBands([0, y_elements.length*20]);
+
+    var yAxis = d3.svg.axis()
+        .scale(yScale)
+        .tickFormat(function (d) {
+            return d;
+        })
+        .orient("left");
+			
+	var colorScale = d3.scale.linear()
+	  .domain([1,405])
+	  <!-- .domain([0, buckets - 1, d3.max(data, function (d) { return d.Enroll; })]) -->
+      .range(["#fcbba1", "#67000d"])
+	  <!-- .range(colors); -->
+
+	
+    var svg = d3.select('.heatmap')
+        .append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+		
+		
+
+    var cells = svg.selectAll('rect')
+        .data(data)
+        .enter().append('g').append('rect')
+        .attr('class', 'cell')
+        .attr('width', 199)
+        .attr('height', 19)
+        .attr('y', function(d) { return yScale(d.Course_ID); })
+        .attr('x', function(d) { return xScale(d.Semester_ID); })
+        .attr('fill', function(d) { return colorScale(d.Enroll); })
+		.attr("stroke", "black")
+		.attr("stroke-width", "1px")
+		
+		.on("mouseover", function(d){
+                  tooltip
+                    .style("left", d3.event.pageX - 50 + "px")
+                    .style("top", d3.event.pageY - 70 + "px")
+                    .style("display", "inline-block")
+                    .html((d.Course_ID) + "<br> Enrollments : "  + (d.Enroll));
+              })
+                  .on("mouseout", function(d){ tooltip.style("display", "none");});
+				  
+				 svg.append("text")
+				 .attr("text-anchor", "middle") 
+			     .attr("transform", "translate(-50,-20)")  
+			     .text("Courses")
+			     .style("fill","red");
+			     svg.append("text")
+			     .attr("text-anchor", "left-side") 
+			     .attr("transform", "translate(800,-49)")  
+				 .text("Semesters")
+			     .style("fill","red");
+		
+		var legend = svg.selectAll('.legend')
+            .data(colorScale.domain())
+            .enter()
+            .append('g')
+            .attr('class', 'legend')
+            .attr('transform', function(d, i) {
+              var height = 60;
+              var offset =  height * colorScale.domain().length / 10;
+              var horz = 33 * legendRectSize;
+              var vert = i * height - offset;
+              return 'translate(' + horz + ',' + vert + ')';
+            });
+
+        legend.append('rect')
+            .attr('width', legendRectSize)
+            .attr('height', legendRectSize)                                   
+            .style('fill', colorScale)
+            .style('stroke', colorScale);
+            
+        legend.append('text')
+            .attr('x', legendRectSize + legendSpacing)
+            .attr('y', legendRectSize - legendSpacing)
+            .text(function(d) { return d; });
+
+		
+		 
+    svg.append("g")
+        .attr("class", "y axis")
+		.call(yAxis)
+		.selectAll('text')
+        .attr('font-weight', 'bold')
+		.style("text-anchor", "left-side")
+		<!-- .attr("x", w / 2 ) -->
+		<!-- .attr("y",  h + 4) -->
+        .selectAll('text')
+        .attr('font-weight', 'bold');
+		
+
+    svg.append("g")
+        .attr("class", "x axis")
+        .call(xAxis)
+        .selectAll('text')
+        .attr('font-weight', 'bold')
+        .style("text-anchor", "middle")
+		<!-- .attr("y", 0-1) -->
+		<!-- .attr("x",0 - (h / 2)) -->
+        .attr("dx", "0.8em")
+        .attr("dy", "-1em")
+		.on("click",function(d){
+			console.log(d);
+			console.log($("#bar").val());
+			debugger;
+			parent.barchart1.document.getElementById("bar").value=d;
+			parent.barchart1.document.getElementById("bar").onchange();
+			
+			
+		})
+        .attr("transform", function (d) {
+            return "rotate(0)";
+	
+        });
+  });
+</script>
+
+
+</body>
+</html>

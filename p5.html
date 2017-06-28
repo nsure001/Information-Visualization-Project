@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">		
+<head>
+	
+	<title>Info Viz Project</title>
+	<meta charset="utf-8">
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/vega-embed/2.2.0/vega-embed.min.js" charset="utf-8"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.js" charset="utf-8"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/vega/2.6.5/vega.js" charset="utf-8"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/vega-lite/1.3.1/vega-lite.js" charset="utf-8"></script>
+	<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/vega-embed/2.2.0/vega-embed.js" charset="utf-8"></script> -->
+	<script type = "text/javascript" src="vega-embed.js"></script>
+	<script src="node_modules/datalib/datalib.min.js"></script>
+
+
+	<style media="screen">
+	  body {
+		background-color: #;
+		}
+		/* Add space between vega-embed links  */
+		.vega-actions a {
+		  margin-right: 100px;
+		}
+	</style>
+</head>
+	
+<body onpageshow="Courses()">
+<select id ="bar" name="ddl" onmousedown="this.value='';" onchange="goto()">
+	<option value="1">Courses</option>
+	<option value="2">Instructors</option>
+</select> 
+
+<div>
+<h2 align="left-side">Comparison of total Student Enrollments in different Semesters</h2>
+</div>
+
+<div id="mychart"></div>
+			
+<!-- load the d3.js library -->
+<div>	
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/2.0.0/jquery.min.js"></script>
+
+<script src="//d3js.org/d3.v4.min.js"></script>
+
+
+<script>
+function goto(){
+$("#mychart").empty();
+ //document.getElementById("graph").innerHTML='';
+ var selection = document.getElementById("bar").value;
+ if(selection == 1){Courses();}
+ else {Instructors();}
+}
+</script>
+
+<div id="mychart" align="center" width="700px;">
+	<script>
+		function Courses(){
+		$("#mychart").empty();
+		   var vlSpecA = {
+			  "data": {"url": "data.json"},
+			  "mark": "bar",
+			  "encoding": {
+				"row": {"field": "Semester_ID", "type": "ordinal"},
+				"x": {"field": "Course_ID", "type": "ordinal",
+				  "sort": {"field": "Enroll","op": "sum"},
+				  "scale": {"bandSize": 15}
+				},
+				"y": {"aggregate": "sum", "field": "Enroll", "type": "quantitative"},
+				"color": {"field": "Semester_ID", "type": "nominal"}
+			  }
+			}
+
+			var embedSpecA = {
+				mode: "vega-lite",
+				spec: vlSpecA
+			};
+
+			vg.embed("#mychart", embedSpecA, function(error, result) {
+			});
+		}	
+	</script>
+</div>
+
+        
+<div id="mychart" align="center" width="700px;">
+	<script>
+		function Instructors(){
+		$("#mychart").empty();
+		   var vlSpecB = {
+			  "data": {"url": "data.json"},
+			  "mark": "bar",
+			  "encoding": {
+				"row": {"field": "Semester_ID", "type": "ordinal"},
+				"y": {"aggregate": "sum", "field": "Enroll", "type": "quantitative"},
+				"x": {
+				  "field": "Instr", "type": "ordinal",
+				  "sort": {"field": "Enroll","op": "sum"},
+				  "scale": {"bandSize": 28}
+				},
+				"color": {"field": "Semester_ID", "type": "nominal"}
+			  }
+			}
+
+			var embedSpecB = {
+				mode: "vega-lite",
+				spec: vlSpecB
+			};
+
+			vg.embed("#mychart", embedSpecB, function(error, result) {
+			});
+		}	
+    </script>		
+</div>	
+		
+	</body>
+</html>

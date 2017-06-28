@@ -1,0 +1,1238 @@
+<!DOCTYPE html>
+<html>
+<meta charset="utf-8">
+<head>
+
+	<title>Info Viz Project</title>
+	<style>
+		body {
+		font-family: sans-serif;
+		  position: relative;
+		  width: 960px;
+		}
+
+		.bar {
+		  fill: green;
+		  fill-opacity: 1;
+		}
+
+
+		.bar:hover {
+		  fill: yellow
+		}
+
+		.axis text {
+		  font: 10px sans-serif;
+		}
+
+		.toolTip {
+			position: absolute;
+		  display: none;
+		  min-width: 50px;
+		  height: auto;
+		  background: none repeat scroll 0 0 #dddddf;
+		  border: 0px solid #9A757F;
+		  padding: 20px;
+		  text-align: center;
+		}
+
+		div.bar {
+				  display: inline-block;
+				  width: 20px;
+				  height: 75px;
+				  background-color: teal;
+		}
+
+
+		#xaxis text, #yaxis text {
+			font-family:  "serif";
+			font-size: 25px;
+		  }
+		  
+		.axis path,
+		.axis line {
+		  fill: none;
+		  stroke: #000;
+		  shape-rendering: crispEdges;
+		}
+
+
+
+		.x.axis path {
+		  display: none;
+		}
+
+		label {
+		  position: absolute;
+		  top: 10px;
+		  right: 10px;
+		}
+	</style>
+</head>
+	
+<body onpageshow="Fall2013()">
+
+<div>
+	<h2 align="left-side">Student Enrollments in each Semester for all Courses</h2>
+</div>
+
+<select id ="bar" name="ddl" onmousedown="this.value='';" onchange="goto()">
+	<option value="Fall 2013">Fall 2013</option>
+	<option value="Spring 2014">Spring 2014</option>
+	<option value="Fall 2014">Fall 2014</option>
+	<option value="Spring 2015">Spring 2015</option>
+	<option value="Fall 2015">Fall 2015</option>
+	<option value="Spring 2016">Spring 2016</option>
+	<option value="Fall 2016">Fall 2016</option>
+	<option value="Spring 2017">Spring 2017</option>
+</select> 
+
+<div id="mychart"></div>
+
+<div>	
+	<script src="http://ajax.googleapis.com/ajax/libs/jquery/2.0.0/jquery.min.js"></script>
+	<script src="//d3js.org/d3.v4.min.js"></script>
+
+	<div><label><input type="checkbox"> Sort values</label></div>
+</div>
+
+<script>
+	function goto(){
+	$("#mychart").empty();
+	 //document.getElementById("graph").innerHTML='';
+	 var selection = document.getElementById("bar").value;
+	 if(selection == "Fall 2013"){Fall2013();}
+	 else if(selection == "Spring 2014"){Spring2014();}
+	 else if(selection == "Fall 2014"){Fall2014();}
+	 else if(selection == "Spring 2015"){Spring2015();}
+	 else if(selection == "Fall 2015"){Fall2015();}
+	 else if(selection == "Spring 2016"){Spring2016();}
+	 else if(selection == "Fall 2016"){Fall2016();}
+	 else {Spring2017();}
+
+	}
+</script>
+
+<script>
+function Fall2013(){
+
+// set the dimensions and margins of the graph
+var margin = {top: 50, right: 20, bottom: 80, left: 40},
+    width = 1750 - margin.left - margin.right,
+    height = 700 - margin.top - margin.bottom;
+
+// set the ranges
+var x = d3.scaleBand()
+          .range([0, width])
+          .padding(0.1);
+var y = d3.scaleLinear()
+          .range([height, 0]);		  
+
+          
+// append the svg object to the #mychart of the page
+// append a 'group' element to 'svg'
+// moves the 'group' element to the top left margin
+var svg = d3.select("#mychart").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+		  
+var tooltip = d3.select("#mychart").append("div").attr("class", "toolTip");
+
+// get the data
+d3.json("data_1.json", function(error, data) {
+   if (error) throw error;
+
+data.sort(function(a, b) { return d3.ascending(a.Course_ID, b.Course_ID)});
+
+var data = d3.nest() 
+		<!-- .key(function(d) { return d.Semester_ID; }) -->
+		.key(function(d) { return d.Course_ID; }) 
+		.rollup(function(v) { return d3.sum(v, function(d) { return d.Enroll; }); }) 
+		.entries(data);
+		console.log(JSON.stringify(data)); 
+
+  
+  // format the data
+data.forEach(function(d) {
+		d.Semester_ID = d.Semester_ID;
+		d.Course_ID = d.key;
+		d.Enroll = d.value;
+  });
+
+  // Scale the range of the data in the domains
+  x.domain(data.map(function(d) { return d.Course_ID; }));
+  y.domain([0, d3.max(data, function(d) { return d.Enroll; })]);
+  
+  
+  // append the rectangles for the bar chart
+  svg.selectAll(".bar")
+      .data(data)
+      .enter().append("rect")
+      .attr("class", "bar")
+      .attr("x", function(d) { return x(d.Course_ID); })
+      .attr("width", x.bandwidth())
+      .attr("y", function(d) { return y(d.Enroll); })
+      .attr("height", function(d) { return height - y(d.Enroll); })
+	  .on("mousemove", function(d){
+                  tooltip
+                    .style("left", d3.event.pageX - 50 + "px")
+                    .style("top", d3.event.pageY - 70 + "px")
+                    .style("display", "inline-block")
+                    .html((d.Course_ID) + "<br> Enrollments : "  + (d.Enroll));
+              })
+                  .on("mouseout", function(d){ tooltip.style("display", "none");});
+				  
+				  svg.append("text")
+           .attr("text-anchor", "middle") 
+       .attr("transform", "translate(1,-5)")  
+            .text("Enrollments")
+      .style("fill","red");
+      svg.append("text")
+      .attr("text-anchor", "left-side") 
+       .attr("transform", "translate(800,680)")  
+            .text("Courses")
+      .style("fill","red");
+	  
+  // add the x Axis
+  svg.append("g")
+	  .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+	  .call(d3.axisBottom(x))
+	  .selectAll('text')
+	  .attr("dx", "-2.5em")
+      .attr("dy", "1em")
+	  <!-- .text("Courses") -->
+	  .attr("transform", function (d) {
+            return "rotate(-30)"; });
+		
+  // add the y Axis
+  svg.append("g")
+      .attr("class", "y axis")
+      .call(d3.axisLeft(y))
+	  .append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 6)
+      .attr("dy", "0.71em")
+      .attr("text-anchor", "end")
+      .text("Enrollments");
+
+	  d3.select("input").on("change", change);
+
+  var sortTimeout = setTimeout(function() {
+    d3.select("input").property("checked", true).each(change);
+  }, 2000);
+
+  function change() {
+    clearTimeout(sortTimeout);
+
+    // Copy-on-write since tweens are evaluated after a delay.
+    var x0 = x.domain(data.sort(this.checked
+        ? function(a, b) { return b.Enroll - a.Enroll; }
+        : function(a, b) { return d3.ascending(a.Course_ID, b.Course_ID); })
+        .map(function(d) { return d.Course_ID; }))
+        .copy();
+
+    svg.selectAll(".bar")
+        .sort(function(a, b) { return x0(a.Course_ID) - x0(b.Course_ID); });
+
+    var transition = svg.transition().duration(1000),
+        delay = function(d, i) { return i * 50; };
+
+    transition.selectAll(".bar")
+        .delay(delay)
+        .attr("x", function(d) { return x0(d.Course_ID); });
+
+    transition.select(".x.axis")
+        .call(d3.axisBottom(x))
+      .selectAll("g")
+        .delay(delay);
+  }
+
+});
+}
+</script>
+
+<script>
+function Spring2014(){
+// set the dimensions and margins of the graph
+var margin = {top: 50, right: 20, bottom: 80, left: 40},
+    width = 1750 - margin.left - margin.right,
+    height = 700 - margin.top - margin.bottom;
+
+// set the ranges
+var x = d3.scaleBand()
+          .range([0, width])
+          .padding(0.1);
+var y = d3.scaleLinear()
+          .range([height, 0]);		  
+
+          
+// append the svg object to the #mychart of the page
+// append a 'group' element to 'svg'
+// moves the 'group' element to the top left margin
+var svg = d3.select("#mychart").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+		  
+var tooltip = d3.select("#mychart").append("div").attr("class", "toolTip");
+
+// get the data
+d3.json("data_2.json", function(error, data) {
+   if (error) throw error;
+
+data.sort(function(a, b) { return d3.ascending(a.Course_ID, b.Course_ID)});
+
+var data = d3.nest() 
+		<!-- .key(function(d) { return d.Semester_ID; }) -->
+		.key(function(d) { return d.Course_ID; }) 
+		.rollup(function(v) { return d3.sum(v, function(d) { return d.Enroll; }); }) 
+		.entries(data);
+		console.log(JSON.stringify(data)); 
+
+  
+  // format the data
+data.forEach(function(d) {
+		d.Semester_ID = d.Semester_ID;
+		d.Course_ID = d.key;
+		d.Enroll = d.value;
+  });
+
+  // Scale the range of the data in the domains
+  x.domain(data.map(function(d) { return d.Course_ID; }));
+  y.domain([0, d3.max(data, function(d) { return d.Enroll; })]);
+  
+  
+  // append the rectangles for the bar chart
+  svg.selectAll(".bar")
+      .data(data)
+      .enter().append("rect")
+      .attr("class", "bar")
+      .attr("x", function(d) { return x(d.Course_ID); })
+      .attr("width", x.bandwidth())
+      .attr("y", function(d) { return y(d.Enroll); })
+      .attr("height", function(d) { return height - y(d.Enroll); })
+	  .on("mousemove", function(d){
+                  tooltip
+                    .style("left", d3.event.pageX - 50 + "px")
+                    .style("top", d3.event.pageY - 70 + "px")
+                    .style("display", "inline-block")
+                    .html((d.Course_ID) + "<br> Enrollments : "  + (d.Enroll));
+              })
+                  .on("mouseout", function(d){ tooltip.style("display", "none");});
+				  
+				  svg.append("text")
+           .attr("text-anchor", "middle") 
+       .attr("transform", "translate(1,-5)")  
+            .text("Enrollments")
+      .style("fill","red");
+      svg.append("text")
+      .attr("text-anchor", "left-side") 
+       .attr("transform", "translate(800,680)")  
+            .text("Courses")
+      .style("fill","red");
+	  
+  // add the x Axis
+  svg.append("g")
+	  .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+	  .call(d3.axisBottom(x))
+	  .selectAll('text')
+	  .attr("dx", "-2.5em")
+      .attr("dy", "1em")
+	  <!-- .text("Courses") -->
+	  .attr("transform", function (d) {
+            return "rotate(-30)"; });
+		
+  // add the y Axis
+  svg.append("g")
+      .attr("class", "y axis")
+      .call(d3.axisLeft(y))
+	  .append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 6)
+      .attr("dy", "0.71em")
+      .attr("text-anchor", "end")
+      .text("Enrollments");
+
+	  d3.select("input").on("change", change);
+
+  var sortTimeout = setTimeout(function() {
+    d3.select("input").property("checked", true).each(change);
+  }, 2000);
+
+  function change() {
+    clearTimeout(sortTimeout);
+
+    // Copy-on-write since tweens are evaluated after a delay.
+    var x0 = x.domain(data.sort(this.checked
+        ? function(a, b) { return b.Enroll - a.Enroll; }
+        : function(a, b) { return d3.ascending(a.Course_ID, b.Course_ID); })
+        .map(function(d) { return d.Course_ID; }))
+        .copy();
+
+    svg.selectAll(".bar")
+        .sort(function(a, b) { return x0(a.Course_ID) - x0(b.Course_ID); });
+
+    var transition = svg.transition().duration(1000),
+        delay = function(d, i) { return i * 50; };
+
+    transition.selectAll(".bar")
+        .delay(delay)
+        .attr("x", function(d) { return x0(d.Course_ID); });
+
+    transition.select(".x.axis")
+        .call(d3.axisBottom(x))
+      .selectAll("g")
+        .delay(delay);
+  }
+
+});
+}
+</script>
+
+<script>
+function Fall2014(){
+// set the dimensions and margins of the graph
+var margin = {top: 50, right: 20, bottom: 80, left: 40},
+    width = 1750 - margin.left - margin.right,
+    height = 700 - margin.top - margin.bottom;
+
+// set the ranges
+var x = d3.scaleBand()
+          .range([0, width])
+          .padding(0.1);
+var y = d3.scaleLinear()
+          .range([height, 0]);		  
+
+          
+// append the svg object to the #mychart of the page
+// append a 'group' element to 'svg'
+// moves the 'group' element to the top left margin
+var svg = d3.select("#mychart").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+		  
+var tooltip = d3.select("#mychart").append("div").attr("class", "toolTip");
+
+// get the data
+d3.json("data_3.json", function(error, data) {
+   if (error) throw error;
+
+data.sort(function(a, b) { return d3.ascending(a.Course_ID, b.Course_ID)});
+
+var data = d3.nest() 
+		<!-- .key(function(d) { return d.Semester_ID; }) -->
+		.key(function(d) { return d.Course_ID; }) 
+		.rollup(function(v) { return d3.sum(v, function(d) { return d.Enroll; }); }) 
+		.entries(data);
+		console.log(JSON.stringify(data)); 
+
+  
+  // format the data
+data.forEach(function(d) {
+		d.Semester_ID = d.Semester_ID;
+		d.Course_ID = d.key;
+		d.Enroll = d.value;
+  });
+
+  // Scale the range of the data in the domains
+  x.domain(data.map(function(d) { return d.Course_ID; }));
+  y.domain([0, d3.max(data, function(d) { return d.Enroll; })]);
+  
+  
+  // append the rectangles for the bar chart
+  svg.selectAll(".bar")
+      .data(data)
+      .enter().append("rect")
+      .attr("class", "bar")
+      .attr("x", function(d) { return x(d.Course_ID); })
+      .attr("width", x.bandwidth())
+      .attr("y", function(d) { return y(d.Enroll); })
+      .attr("height", function(d) { return height - y(d.Enroll); })
+	  .on("mousemove", function(d){
+                  tooltip
+                    .style("left", d3.event.pageX - 50 + "px")
+                    .style("top", d3.event.pageY - 70 + "px")
+                    .style("display", "inline-block")
+                    .html((d.Course_ID) + "<br> Enrollments : "  + (d.Enroll));
+              })
+                  .on("mouseout", function(d){ tooltip.style("display", "none");});
+				  
+				  svg.append("text")
+           .attr("text-anchor", "middle") 
+       .attr("transform", "translate(1,-5)")  
+            .text("Enrollments")
+      .style("fill","red");
+      svg.append("text")
+      .attr("text-anchor", "left-side") 
+       .attr("transform", "translate(800,680)")  
+            .text("Courses")
+      .style("fill","red");
+	  
+  // add the x Axis
+  svg.append("g")
+	  .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+	  .call(d3.axisBottom(x))
+	  .selectAll('text')
+	  .attr("dx", "-2.5em")
+      .attr("dy", "1em")
+	  <!-- .text("Courses") -->
+	  .attr("transform", function (d) {
+            return "rotate(-30)"; });
+		
+  // add the y Axis
+  svg.append("g")
+      .attr("class", "y axis")
+      .call(d3.axisLeft(y))
+	  .append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 6)
+      .attr("dy", "0.71em")
+      .attr("text-anchor", "end")
+      .text("Enrollments");
+
+	  d3.select("input").on("change", change);
+
+  var sortTimeout = setTimeout(function() {
+    d3.select("input").property("checked", true).each(change);
+  }, 2000);
+
+  function change() {
+    clearTimeout(sortTimeout);
+
+    // Copy-on-write since tweens are evaluated after a delay.
+    var x0 = x.domain(data.sort(this.checked
+        ? function(a, b) { return b.Enroll - a.Enroll; }
+        : function(a, b) { return d3.ascending(a.Course_ID, b.Course_ID); })
+        .map(function(d) { return d.Course_ID; }))
+        .copy();
+
+    svg.selectAll(".bar")
+        .sort(function(a, b) { return x0(a.Course_ID) - x0(b.Course_ID); });
+
+    var transition = svg.transition().duration(1000),
+        delay = function(d, i) { return i * 50; };
+
+    transition.selectAll(".bar")
+        .delay(delay)
+        .attr("x", function(d) { return x0(d.Course_ID); });
+
+    transition.select(".x.axis")
+        .call(d3.axisBottom(x))
+      .selectAll("g")
+        .delay(delay);
+  }
+
+});
+}
+</script>
+
+<script>
+function Spring2015(){
+// set the dimensions and margins of the graph
+var margin = {top: 50, right: 20, bottom: 80, left: 40},
+    width = 1750 - margin.left - margin.right,
+    height = 700 - margin.top - margin.bottom;
+
+// set the ranges
+var x = d3.scaleBand()
+          .range([0, width])
+          .padding(0.1);
+var y = d3.scaleLinear()
+          .range([height, 0]);		  
+
+          
+// append the svg object to the #mychart of the page
+// append a 'group' element to 'svg'
+// moves the 'group' element to the top left margin
+var svg = d3.select("#mychart").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+		  
+var tooltip = d3.select("#mychart").append("div").attr("class", "toolTip");
+
+// get the data
+d3.json("data_4.json", function(error, data) {
+   if (error) throw error;
+
+data.sort(function(a, b) { return d3.ascending(a.Course_ID, b.Course_ID)});
+
+var data = d3.nest() 
+		<!-- .key(function(d) { return d.Semester_ID; }) -->
+		.key(function(d) { return d.Course_ID; }) 
+		.rollup(function(v) { return d3.sum(v, function(d) { return d.Enroll; }); }) 
+		.entries(data);
+		console.log(JSON.stringify(data)); 
+
+  
+  // format the data
+data.forEach(function(d) {
+		d.Semester_ID = d.Semester_ID;
+		d.Course_ID = d.key;
+		d.Enroll = d.value;
+  });
+
+  // Scale the range of the data in the domains
+  x.domain(data.map(function(d) { return d.Course_ID; }));
+  y.domain([0, d3.max(data, function(d) { return d.Enroll; })]);
+  
+  
+  // append the rectangles for the bar chart
+  svg.selectAll(".bar")
+      .data(data)
+      .enter().append("rect")
+      .attr("class", "bar")
+      .attr("x", function(d) { return x(d.Course_ID); })
+      .attr("width", x.bandwidth())
+      .attr("y", function(d) { return y(d.Enroll); })
+      .attr("height", function(d) { return height - y(d.Enroll); })
+	  .on("mousemove", function(d){
+                  tooltip
+                    .style("left", d3.event.pageX - 50 + "px")
+                    .style("top", d3.event.pageY - 70 + "px")
+                    .style("display", "inline-block")
+                    .html((d.Course_ID) + "<br> Enrollments : "  + (d.Enroll));
+              })
+                  .on("mouseout", function(d){ tooltip.style("display", "none");});
+				  
+				  svg.append("text")
+           .attr("text-anchor", "middle") 
+       .attr("transform", "translate(1,-5)")  
+            .text("Enrollments")
+      .style("fill","red");
+      svg.append("text")
+      .attr("text-anchor", "left-side") 
+       .attr("transform", "translate(800,680)")  
+            .text("Courses")
+      .style("fill","red");
+	  
+  // add the x Axis
+  svg.append("g")
+	  .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+	  .call(d3.axisBottom(x))
+	  .selectAll('text')
+	  .attr("dx", "-2.5em")
+      .attr("dy", "1em")
+	  <!-- .text("Courses") -->
+	  .attr("transform", function (d) {
+            return "rotate(-30)"; });
+		
+  // add the y Axis
+  svg.append("g")
+      .attr("class", "y axis")
+      .call(d3.axisLeft(y))
+	  .append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 6)
+      .attr("dy", "0.71em")
+      .attr("text-anchor", "end")
+      .text("Enrollments");
+
+	  d3.select("input").on("change", change);
+
+  var sortTimeout = setTimeout(function() {
+    d3.select("input").property("checked", true).each(change);
+  }, 2000);
+
+  function change() {
+    clearTimeout(sortTimeout);
+
+    // Copy-on-write since tweens are evaluated after a delay.
+    var x0 = x.domain(data.sort(this.checked
+        ? function(a, b) { return b.Enroll - a.Enroll; }
+        : function(a, b) { return d3.ascending(a.Course_ID, b.Course_ID); })
+        .map(function(d) { return d.Course_ID; }))
+        .copy();
+
+    svg.selectAll(".bar")
+        .sort(function(a, b) { return x0(a.Course_ID) - x0(b.Course_ID); });
+
+    var transition = svg.transition().duration(1000),
+        delay = function(d, i) { return i * 50; };
+
+    transition.selectAll(".bar")
+        .delay(delay)
+        .attr("x", function(d) { return x0(d.Course_ID); });
+
+    transition.select(".x.axis")
+        .call(d3.axisBottom(x))
+      .selectAll("g")
+        .delay(delay);
+  }
+
+});
+}
+</script>
+
+<script>
+function Fall2015(){
+// set the dimensions and margins of the graph
+var margin = {top: 50, right: 20, bottom: 80, left: 40},
+    width = 1750 - margin.left - margin.right,
+    height = 700 - margin.top - margin.bottom;
+
+// set the ranges
+var x = d3.scaleBand()
+          .range([0, width])
+          .padding(0.1);
+var y = d3.scaleLinear()
+          .range([height, 0]);		  
+
+          
+// append the svg object to the #mychart of the page
+// append a 'group' element to 'svg'
+// moves the 'group' element to the top left margin
+var svg = d3.select("#mychart").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+		  
+var tooltip = d3.select("#mychart").append("div").attr("class", "toolTip");
+
+// get the data
+d3.json("data_5.json", function(error, data) {
+   if (error) throw error;
+
+data.sort(function(a, b) { return d3.ascending(a.Course_ID, b.Course_ID)});
+
+var data = d3.nest() 
+		<!-- .key(function(d) { return d.Semester_ID; }) -->
+		.key(function(d) { return d.Course_ID; }) 
+		.rollup(function(v) { return d3.sum(v, function(d) { return d.Enroll; }); }) 
+		.entries(data);
+		console.log(JSON.stringify(data)); 
+
+  
+  // format the data
+data.forEach(function(d) {
+		d.Semester_ID = d.Semester_ID;
+		d.Course_ID = d.key;
+		d.Enroll = d.value;
+  });
+
+  // Scale the range of the data in the domains
+  x.domain(data.map(function(d) { return d.Course_ID; }));
+  y.domain([0, d3.max(data, function(d) { return d.Enroll; })]);
+  
+  
+  // append the rectangles for the bar chart
+  svg.selectAll(".bar")
+      .data(data)
+      .enter().append("rect")
+      .attr("class", "bar")
+      .attr("x", function(d) { return x(d.Course_ID); })
+      .attr("width", x.bandwidth())
+      .attr("y", function(d) { return y(d.Enroll); })
+      .attr("height", function(d) { return height - y(d.Enroll); })
+	  .on("mousemove", function(d){
+                  tooltip
+                    .style("left", d3.event.pageX - 50 + "px")
+                    .style("top", d3.event.pageY - 70 + "px")
+                    .style("display", "inline-block")
+                    .html((d.Course_ID) + "<br> Enrollments : "  + (d.Enroll));
+              })
+                  .on("mouseout", function(d){ tooltip.style("display", "none");});
+				  
+				  svg.append("text")
+           .attr("text-anchor", "middle") 
+       .attr("transform", "translate(1,-5)")  
+            .text("Enrollments")
+      .style("fill","red");
+      svg.append("text")
+      .attr("text-anchor", "left-side") 
+       .attr("transform", "translate(800,680)")  
+            .text("Courses")
+      .style("fill","red");
+	  
+  // add the x Axis
+  svg.append("g")
+	  .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+	  .call(d3.axisBottom(x))
+	  .selectAll('text')
+	  .attr("dx", "-2.5em")
+      .attr("dy", "1em")
+	  <!-- .text("Courses") -->
+	  .attr("transform", function (d) {
+            return "rotate(-30)"; });
+		
+  // add the y Axis
+  svg.append("g")
+      .attr("class", "y axis")
+      .call(d3.axisLeft(y))
+	  .append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 6)
+      .attr("dy", "0.71em")
+      .attr("text-anchor", "end")
+      .text("Enrollments");
+
+	  d3.select("input").on("change", change);
+
+  var sortTimeout = setTimeout(function() {
+    d3.select("input").property("checked", true).each(change);
+  }, 2000);
+
+  function change() {
+    clearTimeout(sortTimeout);
+
+    // Copy-on-write since tweens are evaluated after a delay.
+    var x0 = x.domain(data.sort(this.checked
+        ? function(a, b) { return b.Enroll - a.Enroll; }
+        : function(a, b) { return d3.ascending(a.Course_ID, b.Course_ID); })
+        .map(function(d) { return d.Course_ID; }))
+        .copy();
+
+    svg.selectAll(".bar")
+        .sort(function(a, b) { return x0(a.Course_ID) - x0(b.Course_ID); });
+
+    var transition = svg.transition().duration(1000),
+        delay = function(d, i) { return i * 50; };
+
+    transition.selectAll(".bar")
+        .delay(delay)
+        .attr("x", function(d) { return x0(d.Course_ID); });
+
+    transition.select(".x.axis")
+        .call(d3.axisBottom(x))
+      .selectAll("g")
+        .delay(delay);
+  }
+
+});
+}
+</script>
+
+<script>
+function Spring2016(){
+// set the dimensions and margins of the graph
+var margin = {top: 50, right: 20, bottom: 80, left: 40},
+    width = 1750 - margin.left - margin.right,
+    height = 700 - margin.top - margin.bottom;
+
+// set the ranges
+var x = d3.scaleBand()
+          .range([0, width])
+          .padding(0.1);
+var y = d3.scaleLinear()
+          .range([height, 0]);		  
+
+          
+// append the svg object to the #mychart of the page
+// append a 'group' element to 'svg'
+// moves the 'group' element to the top left margin
+var svg = d3.select("#mychart").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+		  
+var tooltip = d3.select("#mychart").append("div").attr("class", "toolTip");
+
+// get the data
+d3.json("data_6.json", function(error, data) {
+   if (error) throw error;
+
+data.sort(function(a, b) { return d3.ascending(a.Course_ID, b.Course_ID)});
+
+var data = d3.nest() 
+		<!-- .key(function(d) { return d.Semester_ID; }) -->
+		.key(function(d) { return d.Course_ID; }) 
+		.rollup(function(v) { return d3.sum(v, function(d) { return d.Enroll; }); }) 
+		.entries(data);
+		console.log(JSON.stringify(data)); 
+
+  
+  // format the data
+data.forEach(function(d) {
+		d.Semester_ID = d.Semester_ID;
+		d.Course_ID = d.key;
+		d.Enroll = d.value;
+  });
+
+  // Scale the range of the data in the domains
+  x.domain(data.map(function(d) { return d.Course_ID; }));
+  y.domain([0, d3.max(data, function(d) { return d.Enroll; })]);
+  
+  
+  // append the rectangles for the bar chart
+  svg.selectAll(".bar")
+      .data(data)
+      .enter().append("rect")
+      .attr("class", "bar")
+      .attr("x", function(d) { return x(d.Course_ID); })
+      .attr("width", x.bandwidth())
+      .attr("y", function(d) { return y(d.Enroll); })
+      .attr("height", function(d) { return height - y(d.Enroll); })
+	  .on("mousemove", function(d){
+                  tooltip
+                    .style("left", d3.event.pageX - 50 + "px")
+                    .style("top", d3.event.pageY - 70 + "px")
+                    .style("display", "inline-block")
+                    .html((d.Course_ID) + "<br> Enrollments : "  + (d.Enroll));
+              })
+                  .on("mouseout", function(d){ tooltip.style("display", "none");});
+				  
+				  svg.append("text")
+           .attr("text-anchor", "middle") 
+       .attr("transform", "translate(1,-5)")  
+            .text("Enrollments")
+      .style("fill","red");
+      svg.append("text")
+      .attr("text-anchor", "left-side") 
+       .attr("transform", "translate(800,680)")  
+            .text("Courses")
+      .style("fill","red");
+	  
+  // add the x Axis
+  svg.append("g")
+	  .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+	  .call(d3.axisBottom(x))
+	  .selectAll('text')
+	  .attr("dx", "-2.5em")
+      .attr("dy", "1em")
+	  <!-- .text("Courses") -->
+	  .attr("transform", function (d) {
+            return "rotate(-30)"; });
+		
+  // add the y Axis
+  svg.append("g")
+      .attr("class", "y axis")
+      .call(d3.axisLeft(y))
+	  .append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 6)
+      .attr("dy", "0.71em")
+      .attr("text-anchor", "end")
+      .text("Enrollments");
+
+	  d3.select("input").on("change", change);
+
+  var sortTimeout = setTimeout(function() {
+    d3.select("input").property("checked", true).each(change);
+  }, 2000);
+
+  function change() {
+    clearTimeout(sortTimeout);
+
+    // Copy-on-write since tweens are evaluated after a delay.
+    var x0 = x.domain(data.sort(this.checked
+        ? function(a, b) { return b.Enroll - a.Enroll; }
+        : function(a, b) { return d3.ascending(a.Course_ID, b.Course_ID); })
+        .map(function(d) { return d.Course_ID; }))
+        .copy();
+
+    svg.selectAll(".bar")
+        .sort(function(a, b) { return x0(a.Course_ID) - x0(b.Course_ID); });
+
+    var transition = svg.transition().duration(1000),
+        delay = function(d, i) { return i * 50; };
+
+    transition.selectAll(".bar")
+        .delay(delay)
+        .attr("x", function(d) { return x0(d.Course_ID); });
+
+    transition.select(".x.axis")
+        .call(d3.axisBottom(x))
+      .selectAll("g")
+        .delay(delay);
+  }
+
+});
+}
+</script>
+
+<script>
+function Fall2016(){
+// set the dimensions and margins of the graph
+var margin = {top: 50, right: 20, bottom: 80, left: 40},
+    width = 1750 - margin.left - margin.right,
+    height = 700 - margin.top - margin.bottom;
+
+// set the ranges
+var x = d3.scaleBand()
+          .range([0, width])
+          .padding(0.1);
+var y = d3.scaleLinear()
+          .range([height, 0]);		  
+
+          
+// append the svg object to the #mychart of the page
+// append a 'group' element to 'svg'
+// moves the 'group' element to the top left margin
+var svg = d3.select("#mychart").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+		  
+var tooltip = d3.select("#mychart").append("div").attr("class", "toolTip");
+
+// get the data
+d3.json("data_7.json", function(error, data) {
+   if (error) throw error;
+
+data.sort(function(a, b) { return d3.ascending(a.Course_ID, b.Course_ID)});
+
+var data = d3.nest() 
+		<!-- .key(function(d) { return d.Semester_ID; }) -->
+		.key(function(d) { return d.Course_ID; }) 
+		.rollup(function(v) { return d3.sum(v, function(d) { return d.Enroll; }); }) 
+		.entries(data);
+		console.log(JSON.stringify(data)); 
+
+  
+  // format the data
+data.forEach(function(d) {
+		d.Semester_ID = d.Semester_ID;
+		d.Course_ID = d.key;
+		d.Enroll = d.value;
+  });
+
+  // Scale the range of the data in the domains
+  x.domain(data.map(function(d) { return d.Course_ID; }));
+  y.domain([0, d3.max(data, function(d) { return d.Enroll; })]);
+  
+  
+  // append the rectangles for the bar chart
+  svg.selectAll(".bar")
+      .data(data)
+      .enter().append("rect")
+      .attr("class", "bar")
+      .attr("x", function(d) { return x(d.Course_ID); })
+      .attr("width", x.bandwidth())
+      .attr("y", function(d) { return y(d.Enroll); })
+      .attr("height", function(d) { return height - y(d.Enroll); })
+	  .on("mousemove", function(d){
+                  tooltip
+                    .style("left", d3.event.pageX - 50 + "px")
+                    .style("top", d3.event.pageY - 70 + "px")
+                    .style("display", "inline-block")
+                    .html((d.Course_ID) + "<br> Enrollments : "  + (d.Enroll));
+              })
+                  .on("mouseout", function(d){ tooltip.style("display", "none");});
+				  
+				  svg.append("text")
+           .attr("text-anchor", "middle") 
+       .attr("transform", "translate(1,-5)")  
+            .text("Enrollments")
+      .style("fill","red");
+      svg.append("text")
+      .attr("text-anchor", "left-side") 
+       .attr("transform", "translate(800,680)")  
+            .text("Courses")
+      .style("fill","red");
+	  
+  // add the x Axis
+  svg.append("g")
+	  .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+	  .call(d3.axisBottom(x))
+	  .selectAll('text')
+	  .attr("dx", "-2.5em")
+      .attr("dy", "1em")
+	  <!-- .text("Courses") -->
+	  .attr("transform", function (d) {
+            return "rotate(-30)"; });
+		
+  // add the y Axis
+  svg.append("g")
+      .attr("class", "y axis")
+      .call(d3.axisLeft(y))
+	  .append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 6)
+      .attr("dy", "0.71em")
+      .attr("text-anchor", "end")
+      .text("Enrollments");
+
+	  d3.select("input").on("change", change);
+
+  var sortTimeout = setTimeout(function() {
+    d3.select("input").property("checked", true).each(change);
+  }, 2000);
+
+  function change() {
+    clearTimeout(sortTimeout);
+
+    // Copy-on-write since tweens are evaluated after a delay.
+    var x0 = x.domain(data.sort(this.checked
+        ? function(a, b) { return b.Enroll - a.Enroll; }
+        : function(a, b) { return d3.ascending(a.Course_ID, b.Course_ID); })
+        .map(function(d) { return d.Course_ID; }))
+        .copy();
+
+    svg.selectAll(".bar")
+        .sort(function(a, b) { return x0(a.Course_ID) - x0(b.Course_ID); });
+
+    var transition = svg.transition().duration(1000),
+        delay = function(d, i) { return i * 50; };
+
+    transition.selectAll(".bar")
+        .delay(delay)
+        .attr("x", function(d) { return x0(d.Course_ID); });
+
+    transition.select(".x.axis")
+        .call(d3.axisBottom(x))
+      .selectAll("g")
+        .delay(delay);
+  }
+
+});
+}
+</script>
+
+<script>
+function Spring2017(){
+// set the dimensions and margins of the graph
+var margin = {top: 50, right: 20, bottom: 80, left: 40},
+    width = 1750 - margin.left - margin.right,
+    height = 700 - margin.top - margin.bottom;
+
+// set the ranges
+var x = d3.scaleBand()
+          .range([0, width])
+          .padding(0.1);
+var y = d3.scaleLinear()
+          .range([height, 0]);		  
+
+          
+// append the svg object to the #mychart of the page
+// append a 'group' element to 'svg'
+// moves the 'group' element to the top left margin
+var svg = d3.select("#mychart").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+		  
+var tooltip = d3.select("#mychart").append("div").attr("class", "toolTip");
+
+// get the data
+d3.json("data_8.json", function(error, data) {
+   if (error) throw error;
+
+data.sort(function(a, b) { return d3.ascending(a.Course_ID, b.Course_ID)});
+
+var data = d3.nest() 
+		<!-- .key(function(d) { return d.Semester_ID; }) -->
+		.key(function(d) { return d.Course_ID; }) 
+		.rollup(function(v) { return d3.sum(v, function(d) { return d.Enroll; }); }) 
+		.entries(data);
+		console.log(JSON.stringify(data)); 
+
+  
+  // format the data
+data.forEach(function(d) {
+		d.Semester_ID = d.Semester_ID;
+		d.Course_ID = d.key;
+		d.Enroll = d.value;
+  });
+
+  // Scale the range of the data in the domains
+  x.domain(data.map(function(d) { return d.Course_ID; }));
+  y.domain([0, d3.max(data, function(d) { return d.Enroll; })]);
+  
+  
+  // append the rectangles for the bar chart
+  svg.selectAll(".bar")
+      .data(data)
+      .enter().append("rect")
+      .attr("class", "bar")
+      .attr("x", function(d) { return x(d.Course_ID); })
+      .attr("width", x.bandwidth())
+      .attr("y", function(d) { return y(d.Enroll); })
+      .attr("height", function(d) { return height - y(d.Enroll); })
+	  .on("mousemove", function(d){
+                  tooltip
+                    .style("left", d3.event.pageX - 50 + "px")
+                    .style("top", d3.event.pageY - 70 + "px")
+                    .style("display", "inline-block")
+                    .html((d.Course_ID) + "<br> Enrollments : "  + (d.Enroll));
+              })
+                  .on("mouseout", function(d){ tooltip.style("display", "none");});
+				  
+				  svg.append("text")
+           .attr("text-anchor", "middle") 
+       .attr("transform", "translate(1,-5)")  
+            .text("Enrollments")
+      .style("fill","red");
+      svg.append("text")
+      .attr("text-anchor", "left-side") 
+       .attr("transform", "translate(800,680)")  
+            .text("Courses")
+      .style("fill","red");
+	  
+  // add the x Axis
+  svg.append("g")
+	  .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+	  .call(d3.axisBottom(x))
+	  .selectAll('text')
+	  .attr("dx", "-2.5em")
+      .attr("dy", "1em")
+	  <!-- .text("Courses") -->
+	  .attr("transform", function (d) {
+            return "rotate(-30)"; });
+		
+  // add the y Axis
+  svg.append("g")
+      .attr("class", "y axis")
+      .call(d3.axisLeft(y))
+	  .append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 6)
+      .attr("dy", "0.71em")
+      .attr("text-anchor", "end")
+      .text("Enrollments");
+
+	  d3.select("input").on("change", change);
+
+  var sortTimeout = setTimeout(function() {
+    d3.select("input").property("checked", true).each(change);
+  }, 2000);
+
+  function change() {
+    clearTimeout(sortTimeout);
+
+    // Copy-on-write since tweens are evaluated after a delay.
+    var x0 = x.domain(data.sort(this.checked
+        ? function(a, b) { return b.Enroll - a.Enroll; }
+        : function(a, b) { return d3.ascending(a.Course_ID, b.Course_ID); })
+        .map(function(d) { return d.Course_ID; }))
+        .copy();
+
+    svg.selectAll(".bar")
+        .sort(function(a, b) { return x0(a.Course_ID) - x0(b.Course_ID); });
+
+    var transition = svg.transition().duration(1000),
+        delay = function(d, i) { return i * 50; };
+
+    transition.selectAll(".bar")
+        .delay(delay)
+        .attr("x", function(d) { return x0(d.Course_ID); });
+
+    transition.select(".x.axis")
+        .call(d3.axisBottom(x))
+      .selectAll("g")
+        .delay(delay);
+  }
+
+});
+}
+</script>
+
+</body>
+</html>

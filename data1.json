@@ -1,0 +1,34 @@
+[
+  {
+    "Semester_ID": "Fall 2013",
+    "Enroll": 2405
+  },
+  {
+    "Semester_ID": "Spring 2014",
+    "Enroll": 1896
+  },
+  {
+    "Semester_ID": "Fall 2014",
+    "Enroll": 2525
+  },
+  {
+    "Semester_ID": "Spring 2015",
+    "Enroll": 2548
+  },
+  {
+    "Semester_ID": "Fall 2015",
+    "Enroll": 2628
+  },
+  {
+    "Semester_ID": "Spring 2016",
+    "Enroll": 2735
+  },
+  {
+    "Semester_ID": "Fall 2016",
+    "Enroll": 2729
+  },
+  {
+    "Semester_ID": "Spring 2017",
+    "Enroll": 2810
+  }
+]

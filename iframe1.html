@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<title>Info Viz Project</title>
+
+<head>
+	<h1 align = "center">Visualizing University's Course Enrollment Patterns</h1>
+</head>
+
+<style>
+ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background-color: #333;
+}
+
+iframe#test{
+style="background-color: blue;" 
+margin: 15px;
+}
+
+li {
+    float: left;
+}
+
+li a {
+    display: block;
+    color: white;
+    text-align: center;
+    padding: 14px 16px;
+    text-decoration: none;
+}
+
+li a:hover {
+    background-color: #111;
+}
+
+.active {
+    background-color: skyblue;
+}
+
+iframe {
+	border:none;
+}
+</style>
+</head>
+<body>
+
+<ul>
+  <li><a class="active" href="http://www.cs.odu.edu/~nsuresh/cs725/PROJECT/iframe1.html#">Student Enrollments for different Courses</a></li>
+  <li><a href="http://www.cs.odu.edu/~nsuresh/cs725/PROJECT/iframe2.html#">Student Enrollments for different Instructors</a></li>
+  <li><a href="http://www.cs.odu.edu/~nsuresh/cs725/PROJECT/iframe3.html#">Student Enrollments - Trend Comparison</a></li>
+</ul>
+
+<iframe name="heatmap1" id="heatmap1" src="http://www.cs.odu.edu/~nsuresh/cs725/PROJECT/p2.html" height = 1000px width = 1850px style="margin-bottom: 100px;">
+  <p>Your browser does not support iframes.</p>
+</iframe>
+
+<iframe name="barchart1"  id="barchart1" src="http://www.cs.odu.edu/~nsuresh/cs725/PROJECT/p1.html" height = 900px width = 1850px>
+  <p>Your browser does not support iframes.</p>
+</iframe>
+
+
+</body>
+</html>

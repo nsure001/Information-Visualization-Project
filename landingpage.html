@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+	
+	<title>Info Viz Project</title>
+	<svg width="1560" height="800"></svg>
+	<script src="http://d3js.org/d3.v3.min.js"></script>
+	<script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
+	<script src="https://d3js.org/d3.v4.min.js"></script>
+
+	<style>
+				
+				.axis {
+				  shape-rendering: crispEdges;
+				}
+
+				.x.axis line {
+				  stroke: grey;
+				}
+
+				.x.axis .minor {
+				  stroke-opacity: .5;
+				}
+
+				.x.axis path {
+				  display: none;
+				}
+
+				.y.axis line, .y.axis path {
+				  fill: none;
+				  stroke: #000;
+				}
+				.tooltip
+				{
+				position:absolute;
+				text-align: center;
+				width: 90px;
+				height: 30px;
+				padding: 2px;
+				font: 12px sans-serif;
+				background: lightsteelblue;
+				border: 0px;
+				border-radius: 8px;
+				pointer-events: none;
+				}
+	</style>
+</head>
+
+<body>
+<div style=" position: fixed; top: 0; padding: 10px;">
+<h2>Overall Comparison of total Student Enrollemnts in different Semesters</h2>
+</div>
+<div id="svg"></div>
+<script>
+
+var svg = d3.select("svg"),
+    margin = {top: 150, right: 10, bottom: 10, left: 90},
+    width = 1400,
+    height = 550,
+    g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+var x = d3.scaleBand()
+    .range([0, width]);
+
+var y = d3.scaleLinear()
+    .range([height, 0]);
+	
+	
+	
+var line = d3.line()
+    .x(function(d) { return x(d.Course_ID)+88; })
+    .y(function(d) { return y(d.Enroll); });
+	
+var tooltip = d3.select("#mychart").append("div").attr("class", "toolTip");
+
+d3.json("data.json", function(error, data) {
+  if (error) throw error;
+  
+
+  var data = d3.nest() 
+		.key(function(d) { return d.Semester_ID; })
+		.key(function(d) { return d.Course_ID; }) 
+		.rollup(function(v) { return d3.sum(v, function(d) { return d.Enroll; }); }) 
+		.entries(data);
+		console.log(JSON.stringify(data)); 
+
+  
+  // format the data
+data.forEach(function(d) {
+		d.Semester_ID = d.Semester_ID;
+		d.Course_ID = d.key;
+		d.Enroll = d.value;
+  });
+		
+  x.domain(data.map(function(d) { return d.Semester_ID; }));
+  y.domain(d3.extent(data, function(d) { return d.Enroll; }));
+
+  g.append("g")
+      .attr("transform", "translate(0," + height + ")")
+      .call(d3.axisBottom(x))
+    .select("domain");
+
+  g.append("g")
+      .call(d3.axisLeft(y))
+    .append("text")
+      .attr("fill", "#000")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 6)
+      .attr("dy", "0.71em")
+      .attr("text-anchor", "end")
+      .text("Enrollments");
+
+  g.append("path")
+      .datum(data)
+      .attr("fill", "none")
+      .attr("stroke", "steelblue")
+      .attr("stroke-linejoin", "round")
+      .attr("stroke-linecap", "round")
+      .attr("stroke-width", 1.5)
+      .attr("d", line);
+	  
+	  g.selectAll("dot")
+     .data(data)
+   .enter().append("circle")
+     .attr("r", 5)
+     .attr("cx", function(d) {(d.Semester_ID); return x(d.Semester_ID)+88; })
+     .attr("cy", function(d) { return y(d.Enroll); })
+     .on("mouseover", function(d) {
+       div.transition()
+         .duration(200)
+         .style("opacity", .9);
+         div.html((d.Semester_ID) + "<br/>" + d.Enroll)
+         .style("left", (d3.event.pageX) + "px")
+         .style("top", (d3.event.pageY - 28) + "px");
+       })
+         .on("mouseout", function(d) {
+         div.transition()
+         .duration(500)
+         .style("opacity", 0);
+       });
+});
+
+</script>
+</body>
+</html>
